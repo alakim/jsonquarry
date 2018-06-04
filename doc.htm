@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>JsonQuarry - руководство</title>
+	<script type="text/javascript" src="lib/clarino.min.js"></script>
+	<script type="text/javascript" src="lib/jquery-1.11.0.min.js"></script>
+	<script type="text/javascript" src="jsonquarry.js"></script>
+	<script type="text/javascript">
+	(function($, $C, $D){$H=$C.simple;
+		var px = $C.css.unit("px");
+		var Styles = {
+			member:{color:"#40e"}
+		};
+		$C.css.writeStylesheet({
+			body:{
+				"font-family":"Verdana, Arial, Sans-Serif",
+				"font-size":px(14),
+				" .propList":{
+					"text-indent":px(0),
+					padding:px(0, 0, 0, 20),
+					" .type":{
+						"font-style":"italic",
+						color:Styles.member.color
+					},
+					" .name":{
+						"font-weight":"bold"
+					},
+					" span.fName":{
+						"font-weight":"bold",
+						color:Styles.member.color
+					},
+					" p":{margin:0, padding:0, "text-indent":px(20)},
+					" ol":{padding:px(0, 0, 0, 35)}
+				},
+				" span.code":{
+					"font-family":"Courier New, Monospace",
+					background:"#fff",
+					padding:px(2)
+				}
+			}
+		});
+		$(function(){
+			function lambdaAvailable(fName){with($H){
+				fName = fName || "F";
+				return p("Функция ", code(fName)," может быть задана ",  a({href:"#lambda"}, "лямбда-выражением"), ".");
+			}}
+			function code(cc){with($H){
+				return span({"class":"code"}, cc);
+			}}
+			function param(nm, dsc){with($H){
+				return li(span({"class":"name"}, nm), " - ", dsc)
+			}}
+			function fParams(str){with($H){
+				return span({"class":"fName"}, "(", str, ")");
+			}}
+			var common = {
+				each: function(){with($H){
+					return markup(", получающую следующие параметры: " + ol(
+						param("val", "значение элемента структуры"),
+						param("key", "ключ данного элемента"),
+						param("i", "номер итерации при обходе элементов (если структура является массивом, этот номер совпадает со значением ключа)")
+					) + lambdaAvailable());
+				}},
+				map: function(){with($H){
+					return markup(p("В функцию F передаются следующие параметры:") + ol(
+						param("val", "значение элемента структуры"),
+						param("key", "ключ данного элемента"),
+						param("i", "номер итерации при обходе элементов (если структура является массивом, этот номер совпадает со значением ключа)")
+					) + lambdaAvailable());
+				}},
+				aggregate: function(monadic){with($H){
+					return markup(
+						" - возвращает агрегированное значение по всем элементам заданной коллекции ", monadic?"":code("coll"), ". Параметры",
+						ol(
+							monadic?null:param("coll", "исходная коллекция"),
+							param("initial", "задает начальное значения для вычисления агрегата"),
+							param("F", "функция, возвращающая агрегированное значение на каждой итерации. Получает следующие параметры:",
+								ol(
+									param("el", "очередной элемент коллекции"),
+									param("res", "текущее агрегированное значение")
+								)
+							)
+						),
+						p("Пример: ", 
+							monadic?code("JsonQuarry([{x:1}, {x:2}, {x:3}]).aggregate(0, function(e, aggr){return aggr + e.x;}")
+							:code("JsonQuarry.aggregate([{x:1}, {x:2}, {x:3}], 0, \"e,aggr|aggr+e.x\")")
+						),
+						lambdaAvailable()
+					);
+				}},
+				keys: function(monadic){with($H){
+					return markup(" - Возвращает коллекцию ключей исходной коллекции ", monadic?"":code("coll"),".");
+				}},
+				groupBy: function(monadic){with($H){
+					return markup(" - группирует элементы исходной коллекции ", monadic?"":code("coll"), ". Параметры:", ol(
+						monadic?null:param("coll", "исходная коллекция"),
+						param("F", "функция, возвращающая значение, по которому производится группировка. Вместо функции может быть передано имя поля элемента исходной коллекции, из которого выбирается значение для группировки.")
+					), lambdaAvailable());
+				}},
+				sort: function(monadic){with($H){
+					return markup(" - сортирует элементы исходной коллекции "+(monadic?"":code("coll"))+" по условию, заданному функцией "+code("F")+". Вместо функции может быть передано имя поля элемента коллекции, из которого выбирается значение для сортировки.", lambdaAvailable());
+				}},
+				reverse: function(monadic){with($H){
+					return markup(" - изменяет порядок элементов исходной коллекции ", (monadic?"":code("coll"))," на обратный");
+				}},
+				treeToArray: function(monadic){with($H){
+					return markup(" - преобразует исходную иерархическую структуру "+(monadic?"":code("coll"))+" в массив. Параметры:", ol(
+						monadic?null:param("coll", "исходная структура"),
+						param("childField", "имя поля, содержащего список дочерних элементов, данного узла"),
+						param("F", "функция, возвращающая данные, помещаемые в целевой массив. Вместо функции может быть передано имя поля элемента исходной структуры, содержащего необходимые данные")
+					), lambdaAvailable());
+				}}
+			};
+			$("body").html((function(){with($H){
+				return div(
+					h1("Руководство по использованию библиотеки JsonQuarry v.", JsonQuarry.version()),
+					p("Библиотека JsonQuarry предназначена для выполнения операций поиска, сортировки, и различных преобразований над структурами данных в формате JSON."),
+					p("Текущая версия библиотеки JsonQuarry v.", JsonQuarry.version()),
+					p("Основные свойства и методы: "),
+					ul({"class":"propList"},
+						apply($D, function(m, nm){
+							return li(
+								span({"class":"type"}, typeof(m)), " ",
+								span({"class":"fName"}, nm),
+								{
+									version:" - без аргументов возвращает текущий номер версии, если передать требуемый номер версии - возвратит соответствующий интерфейс модуля, или, если такая версия еще не поддерживается, выдаст сообщение об ошибке",
+									extend:fParams("o, s, deep") + " - копирует свойства структуры s в объект o. Если указан "+code("deep=true")+" (по умолчанию "+code("false")+"), то производится глубокое копирование",
+									each:fParams("coll, F")+ " - для каждого элемента первого уровня структуры данных "+code("coll")+" вызывает функцию "+code("F")+common.each(),
+									map:fParams("coll, F")+ " - модифицирует все элементы первого уровня структуры данных "+code("coll")+", применяя к ним функцию F."+common.map(),
+									select:fParams("coll, F")+ " - выбирает из первого уровня структуры данных "+code("coll")+" элементы, отвечающие условию, задаваемому функцией "+code("F")+"."+lambdaAvailable(),
+									first:fParams("coll")+ " - возвращает коллекцию, содержащую первый элемент верхнего уровня исходной структуры данных "+code("coll")+". "+ lambdaAvailable(),
+									flat:fParams("coll, F")+ " - преобразует структуру "+code("coll")+" в \"плоский\" массив. Если задана функция "+code('F')+ ', возвращающая коллекцию дочерних элементов текущего узла, выполняется рекурсивное разворачивание структуры. '+lambdaAvailable(),
+									page:fParams("coll, size, nr")+ " - постраничное отображение массива "+code("coll")+". Возвращает страницу размером "+code("size")+", заданную номером "+code("nr")+". ",
+									index:fParams("coll, cond, constr")+ " - формирует индекс элементов исходной структуры данных. Параметры: "+ol(
+										param("coll", "исходная структура данных"),
+										param("cond", "условие индексирования - имя поля, по которому производится индексирование, или функция, возвращающая индексируемое значение. Если значение не задано, по умолчанию используется функция, возвращающая сам элемент коллекции, т.е. "+code("x|x")+"."),
+										param("constr", "необязательный конструктор элемента индекса. Если задан, преобразует элемент данных исходной структуры в элемент индекса.")
+									)+ lambdaAvailable("cond"),
+									aggregate:fParams("coll, initial, F")+ common.aggregate(),
+									keys:fParams("coll")+common.keys(),
+									groupBy:fParams("coll, F")+common.groupBy(),
+									concat:fParams("coll, c2")+" - добавляет элементы массива "+code("c2")+" к исходной коллекции "+code("coll"),
+									toArray:fParams("coll")+" - преобразует исходную коллекцию-объект в коллекцию-массив",
+									sort:fParams("coll, F")+common.sort(),
+									reverse:fParams("coll")+common.reverse(),
+									treeToArray:fParams("coll, childField, F")+common.treeToArray(),
+									Dictionary: fParams()+" - создает контейнерный объект типа \"словарь\", имеющий следующие методы:"+ol(
+										li(span({"class":"fName"}, "empty()"), " - возвращает признак отсутствия содержимого словаря"),
+										li(span({"class":"fName"}, "set(name, val)"), " - записывает значение "+code("val")+" под ключом "+code("name")),
+										li(span({"class":"fName"}, "get(name)"), " - возвращает значение, записанное под ключом "+code("name")),
+										li(span({"class":"fName"}, "count()"), " - возвращает количество записанных значений"),
+										li(span({"class":"fName"}, "data()"), " - возвращает данные словаря в виде JSON-объекта")
+									),
+									range:fParams('start, count, step')+' - возвращает массив, содержащий '+code('count')+' элементов, начиная со значения '+code('start')+' с шагом '+code('step')+'. Если шаг не задан, по умолчанию, он принимается равным единице. Если функции передается только один аргумент, то он обозначает количество целых чисел, начиная с нуля, с шагом, равным единице.'
+								}[nm]
+							);
+						})
+					),
+					p("Библиотека допускает работу в монадном стиле. Для этого следует обернуть исходную JSON-структуру функцией ", code("JsonQuarry"),", например: ", code("JsonQuarry({x:1, y:2, name:\"item#2\"})"),", в результате чего получим объект (\"монаду\"), имеющий следующие методы, каждый из которых возвращает объект, являющийся оберткой новой структуры данных, имеющей тот же самый набор методов. В результате, над исходной структурой данных можно производить последовательные действия, например: ", code("JsonQuarry([{x:1}, {x:3}]).select(\"x|x<2\").map(\"x|x*10\").raw()"), ", в результате чего получим массив ", code("[{x:10}]"),"."),
+					p("Доступные методы:"),
+					ul({"class":"propList"},
+						apply(JsonQuarry([]), function(m, nm){
+							return li(
+								span({"class":"type"}, typeof(m)), " ",
+								span({"class":"fName"}, nm),
+								{
+									raw:fParams()+ " - возвращает структуру данных без обертки (вызов этого метода завершает работу в монадном стиле)",
+									extend:fParams("s, deep") + " - расширяет исходную коллекцию, копируя в нее свойства структуры s. Если указан "+code("deep=true")+" (по умолчанию "+code("false")+"), то производится глубокое копирование",
+									trace:fParams("msg")+ " - трассировка, выводит текущее значение структуры данных на консоль, сопровождая сообщением msg (если указано)",
+									map:fParams("F")+ " - модифицирует все элементы первого уровня структуры данных, применяя к ним функцию F."+common.map(),
+									each:fParams("F")+ " - для каждого элемента первого уровня структуры данных вызывает функцию "+code("F")+common.each(),
+									select:fParams("F")+ " - выбирает из первого уровня структуры данных элементы, отвечающие условию, задаваемому функцией "+code("F")+". "+lambdaAvailable(),
+									first:fParams()+ " - возвращает коллекцию, содержащую первый элемент верхнего уровня исходной структуры данных. "+ lambdaAvailable(),
+									flat:fParams('F')+ " - преобразует исходную структуру в \"плоский\" массив. Если задана функция "+code('F')+ ', возвращающая коллекцию дочерних элементов текущего узла, выполняется рекурсивное разворачивание структуры. '+lambdaAvailable(),
+									page:fParams("size, nr")+ " - постраничное отображение массива. Возвращает страницу размером "+code("size")+", заданную номером "+code("nr")+". ",
+									index:fParams("cond, constr")+ " - формирует индекс элементов исходной структуры данных. Параметры: "+ol(
+										param("cond", "условие индексирования - имя поля, по которому производится индексирование, или функция, возвращающая индексируемое значение. Если значение не задано, по умолчанию используется функция, возвращающая сам элемент коллекции, т.е."+code("x|x")+" ."),
+										param("constr", "необязательный конструктор элемента индекса. Если задан, преобразует элемент данных исходной структуры в элемент индекса.")
+									)+ lambdaAvailable("cond"),
+									aggregate:fParams("coll, initial, F")+ common.aggregate(true),
+									keys:fParams()+common.keys(true),
+									groupBy:fParams("F")+common.groupBy(true),
+									concat:fParams("c2")+" - добавляет элементы массива "+code("c2")+" к исходной коллекции.",
+									toArray:fParams()+" - преобразует исходную коллекцию-объект в коллекцию-массив",
+									sort:fParams("F")+common.sort(true),
+									reverse:fParams()+common.reverse(true),
+									treeToArray:fParams("childField, F")+common.treeToArray(true)
+								}[nm]
+							);
+						})
+					),
+					div(
+						a({name:"lambda"}),
+						h2("Использование лямбда-выражений"),
+						p("Для сокращенного указания функций в ряде случаев можно использовать лямбда-выражения, представляющие собой строку следующего формата: ", code("<список формальных параметров>|<возвращаемое значение>"), ". Например, выражение ", code("\"x,y|x+y\""), " означает функцию ", code("function(x, y){return x+y;}"), ".")
+					)
+				);
+			}})());
+		});
+	})(jQuery, Clarino.version('1.1.0'), JsonQuarry.version('1.0.0'));
+	</script>
+</head>
+<body>
+</body>
+</html> 

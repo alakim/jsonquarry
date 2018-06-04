@@ -1,0 +1,731 @@
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>JsonQuarry Unit Tests</title>
+<script type="text/javascript" src="lib/jsUnit_utf8.js"></script>
+<script type="text/javascript" src="jsonquarry.js"></script>
+<script type="text/javascript">
+new JSUnit.Test("Подключение модуля JsonQuarry", "Configuration").run = function(){
+	this.assert(typeof(JsonQuarry), "function");
+}
+
+new JSUnit.Test("compareVersions", "Configuration").run = function(){
+	this.assert(JsonQuarry.compareVersions("1.2.3", "1.2.3"), 0);
+	this.assert(JsonQuarry.compareVersions("2.2.3", "1.2.3"), 1);
+	this.assert(JsonQuarry.compareVersions("1.2.3", "2.2.3"), -1);
+	this.assert(JsonQuarry.compareVersions("1.3.3", "1.2.3"), 1);
+	this.assert(JsonQuarry.compareVersions("1.2.3", "1.3.3"), -1);
+	this.assert(JsonQuarry.compareVersions("1.2.4", "1.2.3"), 1);
+	this.assert(JsonQuarry.compareVersions("1.2.3", "1.2.4"), -1);
+	
+	this.assert(JsonQuarry.compareVersions("2.0.9", "2.0.9"), 0);
+	this.assert(JsonQuarry.compareVersions("2.0.10", "2.0.10"), 0);
+	 
+	this.assert(JsonQuarry.compareVersions("2.0.10", "2.0.9"), 1, "Err 1");
+	this.assert(JsonQuarry.compareVersions("2.0.9", "2.0.10"), -1, "Err 2");
+}
+
+
+new JSUnit.Test("interface", "Configuration").run = function(){
+	var version = JsonQuarry.version();
+	var $D = JsonQuarry.version(version);
+	this.assert($D([1,2,3]).raw(), [1,2,3]);
+	this.assert($D([1,2,3]).map("x|x*2").raw(), [2,4,6]);
+}
+
+new JSUnit.Test("map", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.map([], null), []);
+	this.assert(JsonQuarry.map(null, function(x){return x;}), []);
+	this.assert(JsonQuarry.map([1, 2, 3], function(x){return x*2;}), [2, 4, 6]);
+	this.assert(JsonQuarry.map({x:1, y:2, z:3}, function(x){return x*2;}), {x:2, y:4, z:6});
+	this.assert(JsonQuarry.map({x:1, y:2, z:3}, "x|x*2"), {x:2, y:4, z:6}, "Error lambda");
+	this.assert(
+		JsonQuarry.map({a:5, b:4, c:3}, "x,nm,idx|{v:x,id:idx}"),
+		{a:{v:5, id:0}, b:{v:4, id:1}, c:{v:3, id:2}}
+	);
+}
+
+new JSUnit.Test("each", "Simple Non-monadic").run = function(){
+	var c1 = null;
+	JsonQuarry.each(c1, null);
+	JsonQuarry.each(c1, function(){});
+	this.assert(c1, null);
+	
+	var coll = [1, 2, 3];
+	var log = [];
+	JsonQuarry.each(coll, function(e, i){log.push(i+":"+e);});
+	this.assert(log, ["0:1", "1:2", "2:3"]);
+}
+new JSUnit.Test("each on object", "Simple Non-monadic").run = function(){
+	var coll = {a:10, b:20, c:30};
+	var log = [];
+	JsonQuarry.each(coll, function(v, k, idx){log.push(idx+":"+k+"="+v);});
+	this.assert(log, ["0:a=10", "1:b=20", "2:c=30"]);
+}
+
+new JSUnit.Test("aggregate", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.aggregate(null, 0, function(e, aggr){return aggr+e;}), 0);
+	
+	var coll = [{x:1}, {x:2}, {x:3}];
+	var aggr = JsonQuarry.aggregate(coll, 0, function(e, aggr){return aggr + e.x;});
+	var aggr = JsonQuarry.aggregate(coll, 0, "e,aggr|aggr+e.x");
+	this.assert(aggr, 6, "Error lambda");
+}
+
+
+new JSUnit.Test("select", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.select(null, function(x){return x!=0;}), []);
+	this.assert(JsonQuarry.select([1, 2, 3], function(x){return x<3;}), [1, 2]);
+	this.assert(JsonQuarry.select({x:1, y:2, z:3}, function(x){return x<3;}), {x:1, y:2});
+	this.assert(JsonQuarry.select({x:1, y:2, z:3}, "x|x<3"), {x:1, y:2}, "Error lambda");
+}
+
+new JSUnit.Test("first", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.first(null), []);
+	this.assert(JsonQuarry.first([1, 2, 3]), [1]);
+	this.assert(JsonQuarry.first([1, 2, 3], 0), [1]);
+	this.assert(JsonQuarry.first([1, 2, 3], 1), [1]);
+	this.assert(JsonQuarry.first([1, 2, 3], 2), [1, 2]);
+	this.assert(JsonQuarry.first([1, 2, 3], 3), [1, 2, 3]);
+	this.assert(JsonQuarry.first([1, 2, 3], 4), [1, 2, 3]);
+}
+
+new JSUnit.Test("flat", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.flat(null), []);
+	this.assert(JsonQuarry.flat(
+		[
+			[1, 2, 3],
+			4,
+			[5, 6, 7],
+			8,
+			[9]
+		]
+	), [1, 2, 3, 4, 5, 6, 7, 8, 9], "Error 1");
+	this.assert(JsonQuarry.flat([
+		[
+			{x:21, y:31},
+			{x:22, y:33}
+		],
+		[
+			{x:41, y:41},
+			{x:42, y:43}
+		]
+	]), [
+			{x:21, y:31},
+			{x:22, y:33},
+			{x:41, y:41},
+			{x:42, y:43}
+	], "Error 2");
+}
+
+new JSUnit.Test('flat recursive', 'Simple Non-monadic').run = function(){
+	var coll = [
+		{nm:'n1'},
+		{nm:'n2', children:[
+			{nm:'n3'},
+			{nm:'n4', children:[
+				{nm:'n5'}
+			]}
+		]}
+	];
+	
+	var res = JsonQuarry.flat(coll, 'x|x.children');
+	res = JsonQuarry.map(res, 'x|x.nm').join(';');
+	this.assert(res, 'n1;n2;n3;n4;n5');
+}
+
+//  new JSUnit.Test("flat 1", "Simple Non-monadic", false).run = function(){
+//  	this.assert(JsonQuarry.flat(3), 3, "Err 1");
+//  	this.assert(JsonQuarry.flat([1, 2, 3]), [1, 2, 3], "Err 2");
+//  	this.assert(JsonQuarry.flat({a:1, b:2, c:3}), [1, 2, 3], "Err 3");
+//  }
+//  
+//  new JSUnit.Test("flat 2", "Simple Non-monadic", false).run = function(){
+//  	this.assert(JsonQuarry.flat(
+//  		{
+//  			a:{x:2, y:{n:"abc", m:"zyx"}},
+//  			b:{x:4, y:{n:"def", m:"str"}}
+//  		},
+//  		function(x){
+//  			return x.y;
+//  		}	
+//  	), ["abc", "zyx", "def", "str"]);
+//  }
+
+// new JSUnit.Test("flat 3", "Simple Non-monadic", false).run = function(){
+// 	this.assert(JsonQuarry.flat(
+// 		{
+// 			a:{x:2, y:{n:"abc", m:"zyx", y:[1, 2, 3]}},
+// 			b:{x:4, y:{n:"def", m:"str", y:[4, 5, 6]}},
+// 			y:22
+// 		},
+// 		function(x){
+// 			return x.y;
+// 		},
+// 		true
+// 	), ["abc", "zyx", "def", "str", 1, 2, 3, 4, 5, 6, 22]);
+// }
+
+new JSUnit.Test("page", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.page(null), []);
+	this.assert(JsonQuarry.page([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3, 0), []);
+	this.assert(JsonQuarry.page([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3, 1), [1, 2, 3]);
+	this.assert(JsonQuarry.page([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3, 2), [4, 5, 6]);
+	this.assert(JsonQuarry.page([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3, 3), [7, 8, 9]);
+	this.assert(JsonQuarry.page([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3, 4), [10]);
+	this.assert(JsonQuarry.page([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3, 5), []);
+}
+
+new JSUnit.Test("index", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.index(null, 'id'), {});
+	var coll = [
+		{id:1, nm:"John"},
+		{id:2, nm:"Phill"},
+		{id:3, nm:"James"}
+	];
+	this.assert(JsonQuarry.index(coll, "id"), {
+		1:{id:1, nm:"John"},
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	});
+	this.assert(JsonQuarry.index(coll, function(e){return e.id;}), {
+		1:{id:1, nm:"John"},
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	});
+	this.assert(JsonQuarry.index(coll, "e|e.id"), {
+		1:{id:1, nm:"John"},
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	}, "Error lambda 1");
+	this.assert(JsonQuarry.index("a;b;c".split(";"), function(x){return x;}, function(x, i){return i;}), {a:0, b:1, c:2});
+	this.assert(JsonQuarry.index("a;b;c".split(";"), "x|x", "x,i|i"), {a:0, b:1, c:2}, "Error lambda 2");
+	this.assert(JsonQuarry.index(["a", "b", "c", "a"]), {a:"a", b:"b", c:"c"});
+}
+
+new JSUnit.Test("keys", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.keys(null), []);
+	var obj = {x:3, y:5, z:'slls'};
+	this.assert(JsonQuarry.keys(obj), ["x", "y", "z"]);
+}
+
+new JSUnit.Test("groupBy", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.groupBy(null, 'id'), {});
+	var coll = [
+		{salary:100, nm:"John"},
+		{salary:200, nm:"Phill"},
+		{salary:100, nm:"James"}
+	];
+	this.assert(JsonQuarry.groupBy(coll, "salary"), {
+		100:[
+			{salary:100, nm:"John"},
+			{salary:100, nm:"James"}
+		],
+		200:[{salary:200, nm:"Phill"}],
+	});
+	this.assert(JsonQuarry.groupBy(coll, function(e){return e.salary;}), {
+		100:[
+			{salary:100, nm:"John"},
+			{salary:100, nm:"James"}
+		],
+		200:[{salary:200, nm:"Phill"}],
+	});
+	this.assert(JsonQuarry.groupBy(coll, "e|e.salary"), {
+		100:[
+			{salary:100, nm:"John"},
+			{salary:100, nm:"James"}
+		],
+		200:[{salary:200, nm:"Phill"}],
+	}, "Error lambda");
+}
+
+new JSUnit.Test("extend", "Simple Non-monadic").run = function(){
+	var c1 = null;
+	JsonQuarry.extend(c1, {x:21});
+	this.assert(c1, null);
+	c1 = {x:22};
+	JsonQuarry.extend(c1, null);
+	this.assert(c1, {x:22});
+	
+	var coll = {
+		1:"John",
+		2:"Phill",
+		3:"James"
+	};
+	JsonQuarry.extend(coll, {
+		4:"George",
+		5:"Paul"
+	});
+	this.assert(coll, {
+		1:"John",
+		2:"Phill",
+		3:"James",
+		4:"George",
+		5:"Paul"
+	});
+}
+
+new JSUnit.Test("extend deep", "Simple Non-monadic").run = function(){
+	var coll = {
+		1:{name:"John", salary:300},
+		2:{name:"Phill", salary:500},
+		3:{name:"James", salary:400}
+	};
+	JsonQuarry.extend(coll, {
+		1:{salary:600}
+	}, true);
+	this.assert(coll, {
+		1:{name:"John", salary:600},
+		2:{name:"Phill", salary:500},
+		3:{name:"James", salary:400}
+	});
+}
+
+new JSUnit.Test("concat", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.concat(null, [2]), [2], 'Error 1.1');
+	this.assert(JsonQuarry.concat(null, null), [], 'Error 1.2');
+	this.assert(JsonQuarry.concat([1], null), [1], 'Error 1.3');
+	
+	var coll = [1, 2, 3];
+	this.assert(JsonQuarry.concat(coll, [4, 5]), [1, 2, 3, 4, 5]);
+	this.assert(JsonQuarry.concat(coll, JsonQuarry([4, 5])), [1, 2, 3, 4, 5]);
+}
+
+new JSUnit.Test("toArray", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.toArray(null), []);
+	
+	this.assert(JsonQuarry.toArray({
+		1:{id:1, nm:"John"},
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	}), [
+		{id:1, nm:"John"},
+		{id:2, nm:"Phill"},
+		{id:3, nm:"James"}
+	]);
+
+	this.assert(JsonQuarry.toArray({
+		1:{nm:"John"},
+		2:{nm:"Phill"},
+		3:{nm:"James"}
+	}, function(e, k){e.id = +k; return e;}), [
+		{id:1, nm:"John"},
+		{id:2, nm:"Phill"},
+		{id:3, nm:"James"}
+	]);
+}
+
+new JSUnit.Test("treeToArray", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.treeToArray(null, 'cc', function(){}), []);
+	this.assert(JsonQuarry.treeToArray({}, null, function(){}), []);
+	this.assert(JsonQuarry.treeToArray({}, 'cc', null), []);
+	
+	var tree = {nm:"library", children:[
+		{nm:"scifi", children:[
+		]},
+		{nm:"classics", children:[
+			{nm:"russian", children:[
+				{nm:"Pushkin"},
+				{nm:"Tolstoy"}
+			]}
+		]}
+	]};
+	this.assert(JsonQuarry.treeToArray(tree, "children", function(e){return e.nm;}), [
+		"library", "scifi", "classics", "russian", "Pushkin", "Tolstoy"
+	]);
+	this.assert(JsonQuarry.treeToArray(tree, "children", "e|e.nm"), [
+		"library", "scifi", "classics", "russian", "Pushkin", "Tolstoy"
+	], "Error lambda");
+	this.assert(JsonQuarry.treeToArray(tree, "children", "nm"), [
+		"library", "scifi", "classics", "russian", "Pushkin", "Tolstoy"
+	]);
+}
+
+new JSUnit.Test("sort", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.sort(null), []);
+	
+	var coll = [1, 5, 3];
+	this.assert(JsonQuarry.sort(coll), [1, 3, 5]);
+	coll = [
+		{salary:100, nm:"John"},
+		{salary:200, nm:"Phill"},
+		{salary:80, nm:"James"}
+	];
+	this.assert(JsonQuarry.sort(coll, function(a,b){return a.salary>b.salary?1:a.salary<b.salary?-1:0;}), [
+		{salary:80, nm:"James"},
+		{salary:100, nm:"John"},
+		{salary:200, nm:"Phill"}
+	]);
+	this.assert(JsonQuarry.sort(coll, "a,b|a.salary>b.salary?1:a.salary<b.salary?-1:0"), [
+		{salary:80, nm:"James"},
+		{salary:100, nm:"John"},
+		{salary:200, nm:"Phill"}
+	], "Error lambda");
+	this.assert(JsonQuarry.sort(coll, "salary"), [
+		{salary:80, nm:"James"},
+		{salary:100, nm:"John"},
+		{salary:200, nm:"Phill"}
+	]);
+}
+
+new JSUnit.Test("reverse", "Simple Non-monadic").run = function(){
+	this.assert(JsonQuarry.reverse(null), []);
+	var coll = [1, 2, 3, 4];
+	this.assert(JsonQuarry.reverse(coll), [4, 3, 2, 1]);
+}
+
+new JSUnit.Test("raw", "Basic Monadic").run = function(){
+	this.assert(JsonQuarry(null).raw(), []);
+	var coll = [1, 2, 3];
+	var d = JsonQuarry(coll);
+	this.assert(d.raw(), coll);
+	this.assert(JsonQuarry(d).raw(), coll); // повторная обертка не приводит к ошибкам
+}
+
+new JSUnit.Test("trace", "Basic Monadic").run = function(){
+	alert("Проверь вывод в консоли массива [1, 2, 3]!");
+	var coll = [1, 2, 3];
+	this.assert(JsonQuarry(coll).trace("Тестовый вывод").raw(), coll);
+}
+
+new JSUnit.Test("map", "Basic Monadic").run = function(){
+	this.assert(JsonQuarry([1, 2, 3]).map(function(x){return x*2;}).raw(), [2, 4, 6]);
+	this.assert(JsonQuarry({x:1, y:2, z:3}).map(function(x){return x*2;}).raw(), {x:2, y:4, z:6});
+	this.assert(JsonQuarry({x:1, y:2, z:3}).map("x|x*2").raw(), {x:2, y:4, z:6}, "Error lambda");
+	this.assert(JsonQuarry({
+		a:{
+			nm:"e1",
+			param:{
+				p1:{nm:"p11"},
+				p2:{nm:"p12"}
+			}
+		},
+		b:{
+			nm:"e2",
+			param:{
+				p1:{nm:"p21"},
+				p2:{nm:"p22"}
+			}
+		}
+	}).map("x|x.param").raw(), {
+		a:{
+			p1:{nm:"p11"},
+			p2:{nm:"p12"}
+		},
+		b:{
+			p1:{nm:"p21"},
+			p2:{nm:"p22"}
+		}
+	}, "Error lambda 2");
+	this.assert(
+		JsonQuarry({a:5, b:4, c:3}).map("x,nm,idx|{v:x,id:idx}").raw(),
+		{a:{v:5, id:0}, b:{v:4, id:1}, c:{v:3, id:2}}
+	);
+}
+
+new JSUnit.Test("each", "Basic Monadic").run = function(){
+	var log = [];
+	this.assert(JsonQuarry([1, 2, 3]).each(function(x){log.push(x);}).raw(), [1, 2, 3]);
+	this.assert(log, [1, 2, 3]);
+	log = [];
+	this.assert(JsonQuarry({x:1, y:2, z:3}).each(function(x, n){log.push(n+":"+x);}).raw(), {x:1, y:2, z:3});
+	this.assert(log, ["x:1", "y:2", "z:3"]);
+}
+new JSUnit.Test("each on object", "Basic Monadic").run = function(){
+	var coll = {a:10, b:20, c:30};
+	var log = [];
+	this.assert(JsonQuarry(coll).each(function(v, k, idx){log.push(idx+":"+k+"="+v);}).raw(), coll);
+	this.assert(log, ["0:a=10", "1:b=20", "2:c=30"]);
+}
+
+new JSUnit.Test("aggregate", "Basic Monadic").run = function(){
+	var coll = [{x:1}, {x:2}, {x:3}];
+	var aggr = JsonQuarry(coll).aggregate(0, function(e, aggr){return aggr + e.x;});
+	this.assert(aggr, 6);
+}
+new JSUnit.Test("select", "Basic Monadic").run = function(){
+	this.assert(JsonQuarry([1, 2, 3]).select(function(x){return x<3;}).raw(), [1, 2]);
+	this.assert(JsonQuarry({x:1, y:2, z:3}).select(function(x){return x<3;}).raw(), {x:1, y:2});
+}
+
+new JSUnit.Test("first", "Basic Monadic").run = function(){
+	this.assert(JsonQuarry([1, 2, 3]).first().raw(), [1]);
+	this.assert(JsonQuarry([1, 2, 3]).first(0).raw(), [1]);
+	this.assert(JsonQuarry([1, 2, 3]).first(1).raw(), [1]);
+	this.assert(JsonQuarry([1, 2, 3]).first(2).raw(), [1, 2]);
+	this.assert(JsonQuarry([1, 2, 3]).first(3).raw(), [1, 2, 3]);
+	this.assert(JsonQuarry([1, 2, 3]).first(4).raw(), [1, 2, 3]);
+}
+
+new JSUnit.Test("flat", "Basic Monadic").run = function(){
+	this.assert(JsonQuarry(
+		[
+			[1, 2, 3],
+			4,
+			[5, 6, 7],
+			8,
+			[9]
+		]
+	).flat().raw(), [1, 2, 3, 4, 5, 6, 7, 8, 9], "Error 1");
+	this.assert(JsonQuarry([
+		[
+			{x:21, y:31},
+			{x:22, y:33}
+		],
+		[
+			{x:41, y:41},
+			{x:42, y:43}
+		]
+	]).flat().raw(),[
+			{x:21, y:31},
+			{x:22, y:33},
+			{x:41, y:41},
+			{x:42, y:43}
+	], "Error 2");
+}
+
+new JSUnit.Test('flat recursive', 'Basic Monadic').run = function(){
+	var coll = [
+		{nm:'n1'},
+		{nm:'n2', children:[
+			{nm:'n3'},
+			{nm:'n4', children:[
+				{nm:'n5'}
+			]}
+		]}
+	];
+	
+	var res = JsonQuarry.flat(coll, 'x|x.children');
+	res = JsonQuarry.map(res, 'x|x.nm').join(';');
+	this.assert(
+		JsonQuarry(coll)
+			.flat('x|x.children')
+			.map('x|x?x.nm:"NULL"')
+			.raw()
+			.join(';')
+		, 
+		'n1;n2;n3;n4;n5'
+	);
+}
+
+// new JSUnit.Test("flat 1", "Basic Monadic", false).run = function(){
+// 	this.assert(JsonQuarry(3).flat().raw(), 3, "Err 1");
+// 	this.assert(JsonQuarry([1, 2, 3]).flat().raw(), [1, 2, 3], "Err 2");
+// 	this.assert(JsonQuarry({a:1, b:2, c:3}).flat().raw(), [1, 2, 3], "Err 3");
+// }
+// 
+// new JSUnit.Test("flat 2", "Basic Monadic", false).run = function(){
+// 	this.assert(
+// 		JsonQuarry({
+// 				a:{x:2, y:{n:"abc", m:"zyx"}},
+// 				b:{x:4, y:{n:"def", m:"str"}}
+// 			})
+// 			.flat(function(x){return x.y;})
+// 			.raw(), 
+// 		["abc", "zyx", "def", "str"]
+// 	);
+// }
+
+new JSUnit.Test("page", "Basic Monadic").run = function(){
+	this.assert(JsonQuarry([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).page(3, 0).raw(), []);
+	this.assert(JsonQuarry([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).page(3, 1).raw(), [1, 2, 3]);
+	this.assert(JsonQuarry([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).page(3, 2).raw(), [4, 5, 6]);
+	this.assert(JsonQuarry([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).page(3, 3).raw(), [7, 8, 9]);
+	this.assert(JsonQuarry([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).page(3, 4).raw(), [10]);
+	this.assert(JsonQuarry([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).page(3, 5).raw(), []);
+}
+
+new JSUnit.Test("index", "Basic Monadic").run = function(){
+	var coll = [
+		{id:1, nm:"John"},
+		{id:2, nm:"Phill"},
+		{id:3, nm:"James"}
+	];
+	this.assert(JsonQuarry(coll).index("id").raw(), {
+		1:{id:1, nm:"John"},
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	});
+	this.assert(JsonQuarry(coll).index(function(e){return e.id;}).raw(), {
+		1:{id:1, nm:"John"},
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	});
+	this.assert(JsonQuarry("a;b;c".split(";")).index(function(x){return x;}, function(x, i){return i;}).raw(), {a:0, b:1, c:2});
+	this.assert(JsonQuarry(["a", "b", "c", "a"]).index().raw(), {a:"a", b:"b", c:"c"});
+}
+
+new JSUnit.Test("keys", "Basic Monadic").run = function(){
+	var obj = {x:3, y:5, z:'slls'};
+	this.assert(JsonQuarry(obj).keys().raw(), ["x", "y", "z"]);
+}
+
+
+new JSUnit.Test("groupBy", "Basic Monadic").run = function(){
+	var coll = [
+		{salary:100, nm:"John"},
+		{salary:200, nm:"Phill"},
+		{salary:100, nm:"James"}
+	];
+	this.assert(JsonQuarry(coll).groupBy("salary").raw(), {
+		100:[
+			{salary:100, nm:"John"},
+			{salary:100, nm:"James"}
+		],
+		200:[{salary:200, nm:"Phill"}],
+	});
+	this.assert(JsonQuarry(coll).groupBy(function(e){return e.salary;}).raw(), {
+		100:[
+			{salary:100, nm:"John"},
+			{salary:100, nm:"James"}
+		],
+		200:[{salary:200, nm:"Phill"}],
+	});
+}
+
+new JSUnit.Test("extend", "Basic Monadic").run = function(){
+	var coll = {
+		1:{id:1, nm:"John"}
+	};
+	this.assert(JsonQuarry(coll).extend({
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	}).raw(), {
+		1:{id:1, nm:"John"},
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	});
+	this.assert(JsonQuarry(coll).extend(JsonQuarry({
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	})).raw(), {
+		1:{id:1, nm:"John"},
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	});
+}
+
+new JSUnit.Test("extend deep", "Basic Monadic").run = function(){
+	var coll = {
+		1:{name:"John", salary:300},
+		2:{name:"Phill", salary:500},
+		3:{name:"James", salary:400}
+	};
+	var res = JsonQuarry(coll).extend({
+		1:{salary:600}
+	}, true).raw();
+	this.assert(res, {
+		1:{name:"John", salary:600},
+		2:{name:"Phill", salary:500},
+		3:{name:"James", salary:400}
+	});
+}
+
+new JSUnit.Test("concat", "Basic Monadic").run = function(){
+	var coll = [1, 2, 3];
+	this.assert(JsonQuarry(coll).concat([4, 5]).raw(), [1, 2, 3, 4, 5]);
+	this.assert(JsonQuarry(coll).concat(JsonQuarry([4, 5])).raw(), [1, 2, 3, 4, 5]);
+}
+
+new JSUnit.Test("toArray", "Basic Monadic").run = function(){
+	this.assert(JsonQuarry({
+		1:{id:1, nm:"John"},
+		2:{id:2, nm:"Phill"},
+		3:{id:3, nm:"James"}
+	}).toArray().raw(), [
+		{id:1, nm:"John"},
+		{id:2, nm:"Phill"},
+		{id:3, nm:"James"}
+	]);
+
+	this.assert(JsonQuarry({
+		1:{nm:"John"},
+		2:{nm:"Phill"},
+		3:{nm:"James"}
+	}).toArray(function(e, k){e.id = +k; return e;}).raw(), [
+		{id:1, nm:"John"},
+		{id:2, nm:"Phill"},
+		{id:3, nm:"James"}
+	]);
+}
+
+new JSUnit.Test("treeToArray", "Basic Monadic").run = function(){
+	var tree = {nm:"library", children:[
+		{nm:"scifi", children:[
+		]},
+		{nm:"classics", children:[
+			{nm:"russian", children:[
+				{nm:"Pushkin"},
+				{nm:"Tolstoy"}
+			]}
+		]}
+	]};
+	this.assert(JsonQuarry(tree).treeToArray("children", function(e){return e.nm;}).raw(), [
+		"library", "scifi", "classics", "russian", "Pushkin", "Tolstoy"
+	]);
+	this.assert(JsonQuarry(tree).treeToArray("children", "nm").raw(), [
+		"library", "scifi", "classics", "russian", "Pushkin", "Tolstoy"
+	]);
+}
+
+new JSUnit.Test("sort", "Basic Monadic").run = function(){
+	var coll = [1, 5, 3];
+	this.assert(JsonQuarry(coll).sort().raw(), [1, 3, 5]);
+	coll = [
+		{salary:100, nm:"John"},
+		{salary:200, nm:"Phill"},
+		{salary:80, nm:"James"}
+	];
+	this.assert(JsonQuarry(coll).sort(function(a,b){return a.salary>b.salary?1:a.salary<b.salary?-1:0;}).raw(), [
+		{salary:80, nm:"James"},
+		{salary:100, nm:"John"},
+		{salary:200, nm:"Phill"}
+	]);
+	this.assert(JsonQuarry(coll).sort("salary").raw(), [
+		{salary:80, nm:"James"},
+		{salary:100, nm:"John"},
+		{salary:200, nm:"Phill"}
+	]);
+}
+
+new JSUnit.Test("reverse", "Basic Monadic").run = function(){
+	var coll = [1, 2, 3, 4];
+	this.assert(JsonQuarry(coll).reverse().raw(), [4, 3, 2, 1]);
+}
+
+new JSUnit.Test("Dictionary", "Misc").run = function(){
+	var dict = new JsonQuarry.Dictionary();
+	this.assert(dict.empty(), true);
+	dict.set("x", 5);
+	dict.set("y", "abc");
+	dict.set("z");
+	this.assert(dict.get("x"), 5);
+	this.assert(dict.get("y"), "abc");
+	this.assert(dict.get("z"), true);
+	this.assert(dict.empty(), false);
+	this.assert(dict.count(), 3);
+	this.assert(dict.data(), {x:5, y:"abc", z:true});
+}
+
+
+new JSUnit.Test("range", "Misc").run = function(){
+	this.assert(JsonQuarry.range(3), [0, 1, 2], 'Error 1');
+	this.assert(JsonQuarry.range(1, 4), [1, 2, 3, 4], 'Error 2');
+	this.assert(JsonQuarry.range(0, 4, 2), [0, 2, 4, 6], 'Error 3');
+	this.assert(JsonQuarry.range(1, 4, .5), [1, 1.5, 2, 2.5], 'Error 4');
+}
+
+function init(){
+	document.getElementById("versionPanel").innerHTML = JsonQuarry.version();
+	JSUnit.init();
+}
+</script>
+</head>
+<body onload="init()">
+	<h1>JsonQuarry Unit Tests</h1>
+	<p>JsonQuarry - модуль для операций над коллекциями в формате JSON</p>
+	<p>JsonQuarry v.<span id="versionPanel"></span></p>
+	<div id="testContainer" style="display:none;"></div>
+	<div id="out"></div>
+</body>
+</html>
