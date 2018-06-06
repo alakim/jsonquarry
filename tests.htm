@@ -715,6 +715,37 @@ new JSUnit.Test("range", "Misc").run = function(){
 	this.assert(JsonQuarry.range(1, 4, .5), [1, 1.5, 2, 2.5], 'Error 4');
 }
 
+new JSUnit.Test("tree map", "Misc").run = function(){
+	// Пример рекурсивной обработки узлов дерева по шаблону
+	var doc = {nm:'n1', ch:[
+		{nm:'n1.1'},
+		{nm:'n1.2', ch:[
+			{nm:'n1.2.1'},
+			{nm:'n1.2.2'},
+		]}
+	]};
+	var res = JsonQuarry([doc])
+		.map(function(nd){
+			// шаблон для обработки узлов
+			function template(e){
+				var r = {n:e.nm};
+				if(e.ch) r.children = JsonQuarry(e.ch).map(function(cc){
+					return template(cc);
+				}).raw()
+				return r;
+			}
+			return template(nd);
+		})
+		.raw()[0];
+	this.assert(res, {n:'n1', children:[
+		{n:'n1.1'},
+		{n:'n1.2', children:[
+			{n:'n1.2.1'},
+			{n:'n1.2.2'}
+		]}
+	]});
+}
+
 function init(){
 	document.getElementById("versionPanel").innerHTML = JsonQuarry.version();
 	JSUnit.init();
