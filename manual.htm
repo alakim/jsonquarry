@@ -10,36 +10,70 @@
 	(function($, $C, $D){$H=$C.simple;
 		var px = $C.css.unit("px");
 		var Styles = {
-			member:{color:"#40e"}
-		};
-		$C.css.writeStylesheet({
-			body:{
-				"font-family":"Verdana, Arial, Sans-Serif",
-				"font-size":px(14),
-				" .propList":{
-					"text-indent":px(0),
-					padding:px(0, 0, 0, 20),
-					" .type":{
-						"font-style":"italic",
-						color:Styles.member.color
-					},
-					" .name":{
-						"font-weight":"bold"
-					},
-					" span.fName":{
-						"font-weight":"bold",
-						color:Styles.member.color
-					},
-					" p":{margin:0, padding:0, "text-indent":px(20)},
-					" ol":{padding:px(0, 0, 0, 35)}
-				},
-				" span.code":{
-					"font-family":"Courier New, Monospace",
-					background:"#fff",
-					padding:px(2)
+			member:{color:"#40e"},
+			link:{
+				color:{
+					basic:{lo:'#00f', hi:'#48f'},
+					dark:{lo:'#8af', hi:'#48f'}
 				}
 			}
-		});
+		};
+		var Themes = {
+			basic:{
+				body:{
+					"font-family":"Verdana, Arial, Sans-Serif",
+					"font-size":px(14),
+					" .propList":{
+						"text-indent":px(0),
+						padding:px(0, 0, 0, 20),
+						" .type":{
+							"font-style":"italic",
+							color:Styles.member.color
+						},
+						" .name":{
+							"font-weight":"bold"
+						},
+						" span.fName":{
+							"font-weight":"bold",
+							color:Styles.member.color
+						},
+						" p":{margin:0, padding:0, "text-indent":px(20)},
+						" ol":{padding:px(0, 0, 0, 35)}
+					},
+					" span.code":{
+						"font-family":"Courier New, Monospace",
+						background:"#fff",
+						padding:px(2)
+					},
+					' a':{
+						':link':{color:Styles.link.color.basic.lo},
+						':visited':{color:Styles.link.color.basic.lo},
+						':hover':{color:Styles.link.color.basic.hi}
+					}
+				}
+			},
+			dark:{
+				body:{
+					color:'#eee',
+					backgroundColor:'#012',
+					' .propList':{
+						' .type':{color:'#88f'},
+						' span.fName':{color:'#8cf'}
+					},
+					' span.code':{
+						//background:'#31465d'
+						background:'#06333f'
+					},
+					' a':{
+						':link':{color:Styles.link.color.dark.lo},
+						':visited':{color:Styles.link.color.dark.lo},
+						':hover':{color:Styles.link.color.dark.hi}
+					}
+				}
+			}
+		};
+		$C.css.writeStylesheet(Themes.basic);
+		$C.css.writeStylesheet(Themes.dark);
 		$(function(){
 			function lambdaAvailable(fName){with($H){
 				fName = fName || "F";
