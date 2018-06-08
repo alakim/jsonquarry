@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"> <title></title>
+	<script src="lib/jquery-3.1.1.min.js"></script>
+	<script src="lib/clarino.min.js"></script>
+	<script src="lib/doctest.js"></script>
+	<script src="jsonquarry.js"></script>
+	<script>
+		(function($, $C, $D){$H=$C.simple;
+
+			function buildContent(){
+				const {markup,apply,div,span,p}=$H;
+				const {moduleDoc,file,memberDescriptions,attention,test,Assertions,testedSample,argumentList,testResult,buildToc,displayValue,instanceObject} = DocTest;
+
+				$('#content').html(markup(
+					div({'class':'testStatistics'}),
+					div({'class':'testErrors'}),
+					div({'class':'toc'}),
+					moduleDoc('JsonQuarry', [ 
+						memberDescriptions({
+							version:[
+								'При вызове без аргументов возвращает номер версии. Если передан номер версии, возвращает интерфейсный объект соответствующей версии.',
+								test(()=>{
+									const _ = new Assertions();
+									_.assertEqual(typeof($D.version()), 'string');
+									_.assertTrue($D.version('1.0.0')!=null);
+									_.assertEqual(typeof($D.version('1.0.0')), 'function');
+									return _.result();
+								})
+							],
+							extend:[
+									'Копирует атрибуты структуры в объект. ',
+									argumentList({
+										o:'целевой объект',
+										s:'структура, содержащая исходные значения атрибутов',
+										deep:'необязательный, если установлен в true, осуществляется глубокое копирование. По умолчанию - false'
+									}),
+									test(()=>{
+										const _ = new Assertions();
+
+										var c1 = null;
+										JsonQuarry.extend(c1, {x:21});
+										_.assertEqual(c1, null);
+										c1 = {x:22};
+										JsonQuarry.extend(c1, null);
+										_.assertEqual(c1, {x:22});
+										
+										var coll = {
+											1:"John",
+											2:"Phill",
+											3:"James"
+										};
+										JsonQuarry.extend(coll, {
+											4:"George",
+											5:"Paul"
+										});
+										_.assertEqual(coll, {
+											1:"John",
+											2:"Phill",
+											3:"James",
+											4:"George",
+											5:"Paul"
+										});
+										return _.result();
+									}),
+									test(()=>{
+										const _ = new Assertions();
+										var coll = {
+											1:{name:"John", salary:300},
+											2:{name:"Phill", salary:500},
+											3:{name:"James", salary:400}
+										};
+										JsonQuarry.extend(coll, {
+											1:{salary:600}
+										}, true);
+										_.assertEqual(coll, {
+											1:{name:"John", salary:600},
+											2:{name:"Phill", salary:500},
+											3:{name:"James", salary:400}
+										});
+										return _.result();
+									})
+							]
+						}),
+						instanceObject('Использование в "монадном" стиле', ()=>$D([]))(
+							memberDescriptions({
+								extend:[
+									'Копирует атрибуты структуры в текущий объект. ',
+									argumentList({
+										s:'структура, содержащая исходные значения атрибутов',
+										deep:'необязательный, если установлен в true, осуществляется глубокое копирование. По умолчанию - false'
+									}),
+									test(()=>{
+										const _ = new Assertions();
+										var coll = {
+											1:{id:1, nm:"John"}
+										};
+										_.assertEqual(JsonQuarry(coll).extend({
+											2:{id:2, nm:"Phill"},
+											3:{id:3, nm:"James"}
+										}).raw(), {
+											1:{id:1, nm:"John"},
+											2:{id:2, nm:"Phill"},
+											3:{id:3, nm:"James"}
+										});
+										_.assertEqual(JsonQuarry(coll).extend(JsonQuarry({
+											2:{id:2, nm:"Phill"},
+											3:{id:3, nm:"James"}
+										})).raw(), {
+											1:{id:1, nm:"John"},
+											2:{id:2, nm:"Phill"},
+											3:{id:3, nm:"James"}
+										});
+										return _.result();
+									}),
+									test(()=>{
+										const _ = new Assertions();
+										var coll = {
+											1:{name:"John", salary:300},
+											2:{name:"Phill", salary:500},
+											3:{name:"James", salary:400}
+										};
+										var res = JsonQuarry(coll).extend({
+											1:{salary:600}
+										}, true).raw();
+										_.assertEqual(res, {
+											1:{name:"John", salary:600},
+											2:{name:"Phill", salary:500},
+											3:{name:"James", salary:400}
+										});
+										return _.result();
+									})
+								]
+							})
+						)
+					])
+				));
+				buildToc();
+
+				$('div.testStatistics').html($H.p({'class':testResult.total==testResult.success?'success':'error'},
+					'Выполнено ', testResult.total, ' тестов. Успешных: ', testResult.success, ', ошибок: ', testResult.errors, '.'
+				));
+				if(testResult.errors) $('div.testErrors').addClass('testError').html('Обнаружены ошибки выполнения тестов!');
+			}
+
+			$(function(){
+				$('title').html($('h1').html());
+				buildContent();
+			});
+		})(jQuery, Clarino.version('1.1.0'), JsonQuarry.version('1.0.0'));
+	</script>
+</head>
+<body>
+	<h1>Библиотека JsonQuarry - руководство</h1>
+	<div id="content"></div>
+</body>
+</html>
