@@ -20,60 +20,80 @@
 		};
 		var Themes = {
 			basic:{
-				body:{
-					"font-family":"Verdana, Arial, Sans-Serif",
-					"font-size":px(14),
-					" .propList":{
-						"text-indent":px(0),
-						padding:px(0, 0, 0, 20),
-						" .type":{
-							"font-style":"italic",
-							color:Styles.member.color
+				styles: {
+					body:{
+						"font-family":"Verdana, Arial, Sans-Serif",
+						"font-size":px(14),
+						" .propList":{
+							"text-indent":px(0),
+							padding:px(0, 0, 0, 20),
+							" .type":{
+								"font-style":"italic",
+								color:Styles.member.color
+							},
+							" .name":{
+								"font-weight":"bold"
+							},
+							" span.fName":{
+								"font-weight":"bold",
+								color:Styles.member.color
+							},
+							" p":{margin:0, padding:0, "text-indent":px(20)},
+							" ol":{padding:px(0, 0, 0, 35)}
 						},
-						" .name":{
-							"font-weight":"bold"
+						" span.code":{
+							"font-family":"Courier New, Monospace",
+							background:"#fff",
+							padding:px(2)
 						},
-						" span.fName":{
-							"font-weight":"bold",
-							color:Styles.member.color
-						},
-						" p":{margin:0, padding:0, "text-indent":px(20)},
-						" ol":{padding:px(0, 0, 0, 35)}
-					},
-					" span.code":{
-						"font-family":"Courier New, Monospace",
-						background:"#fff",
-						padding:px(2)
-					},
-					' a':{
-						':link':{color:Styles.link.color.basic.lo},
-						':visited':{color:Styles.link.color.basic.lo},
-						':hover':{color:Styles.link.color.basic.hi}
+						' a':{
+							':link':{color:Styles.link.color.basic.lo},
+							':visited':{color:Styles.link.color.basic.lo},
+							':hover':{color:Styles.link.color.basic.hi}
+						}
 					}
 				}
 			},
+			light:{
+				name:'светлое',
+				styles:{}
+			},
 			dark:{
-				body:{
-					color:'#eee',
-					backgroundColor:'#012',
-					' .propList':{
-						' .type':{color:'#88f'},
-						' span.fName':{color:'#8cf'}
-					},
-					' span.code':{
-						//background:'#31465d'
-						background:'#06333f'
-					},
-					' a':{
-						':link':{color:Styles.link.color.dark.lo},
-						':visited':{color:Styles.link.color.dark.lo},
-						':hover':{color:Styles.link.color.dark.hi}
+				name:'темное',
+				styles:{
+					body:{
+						color:'#eee',
+						backgroundColor:'#012',
+						' .propList':{
+							' .type':{color:'#88f'},
+							' span.fName':{color:'#8cf'}
+						},
+						' span.code':{
+							//background:'#31465d'
+							background:'#06333f'
+						},
+						' a':{
+							':link':{color:Styles.link.color.dark.lo},
+							':visited':{color:Styles.link.color.dark.lo},
+							':hover':{color:Styles.link.color.dark.hi}
+						}
 					}
 				}
 			}
 		};
-		$C.css.writeStylesheet(Themes.basic);
-		$C.css.writeStylesheet(Themes.dark);
+
+		function themeSelector(){with($H){
+			return div({'class':'themeSelector'},
+				'Оформление ',
+				select(
+					apply(Themes, function(s, k){
+						return s.name?option({value:k}, s.name):null;
+					})
+				)
+			);
+		}}
+
+		$C.css.writeStylesheet(Themes.basic.styles);
 		$(function(){
 			function lambdaAvailable(fName){with($H){
 				fName = fName || "F";
@@ -148,6 +168,7 @@
 			};
 			$("body").html((function(){with($H){
 				return div(
+					themeSelector(),
 					h1("Руководство по использованию библиотеки JsonQuarry v.", JsonQuarry.version()),
 					p("Библиотека JsonQuarry предназначена для выполнения операций поиска, сортировки, и различных преобразований над структурами данных в формате JSON."),
 					p("Текущая версия библиотеки JsonQuarry v.", JsonQuarry.version()),
@@ -230,10 +251,29 @@
 						p("Для сокращенного указания функций в ряде случаев можно использовать лямбда-выражения, представляющие собой строку следующего формата: ", code("<список формальных параметров>|<возвращаемое значение>"), ". Например, выражение ", code("\"x,y|x+y\""), " означает функцию ", code("function(x, y){return x+y;}"), ".")
 					)
 				);
-			}})());
+			}})())
+			.find('.themeSelector select').change(function(){
+				var themeID = $(this).val();
+				setTheme(themeID);
+				localStorage.setItem('JsonQuarryTheme', themeID);
+			}).end();
+
+			function setTheme(themeID){
+				$('#theme').html($C.css.stylesheet(Themes[themeID].styles));
+			}
+
+			function initTheme(){
+				var themeID = localStorage.getItem('JsonQuarryTheme') || 'light';
+				setTheme(themeID);
+				$('.themeSelector select').val(themeID);
+			}
+
+			initTheme();
 		});
+
 	})(jQuery, Clarino.version('1.1.0'), JsonQuarry.version('1.0.0'));
 	</script>
+	<style id="theme"></style>
 </head>
 <body>
 </body>
