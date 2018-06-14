@@ -9,8 +9,42 @@
 	<script>
 		(function($, $C, $D){$H=$C.simple;
 
+			function lambdaAvailable(fName){with($H){
+				fName = fName || "F";
+				return p("Функция ", code(fName)," может быть задана ",  a({href:"#lambda"}, "лямбда-выражением"), ".");
+			}}
+			function code(cc){with($H){
+				return span({"class":"code"}, cc);
+			}}
+			function param(nm, dsc){with($H){
+				return li(span({"class":"name"}, nm), " - ", dsc)
+			}}
+
+			var common = {
+				aggregate: function(monadic){with($H){
+					return markup(
+						" - возвращает агрегированное значение по всем элементам заданной коллекции ", monadic?"":code("coll"), ". Параметры",
+						ol(
+							monadic?null:param("coll", "исходная коллекция"),
+							param("initial", "задает начальное значения для вычисления агрегата"),
+							param("F", "функция, возвращающая агрегированное значение на каждой итерации. Получает следующие параметры:",
+								ol(
+									param("el", "очередной элемент коллекции"),
+									param("res", "текущее агрегированное значение")
+								)
+							)
+						),
+						p("Пример: ", 
+							monadic?code("JsonQuarry([{x:1}, {x:2}, {x:3}]).aggregate(0, function(e, aggr){return aggr + e.x;}")
+							:code("JsonQuarry.aggregate([{x:1}, {x:2}, {x:3}], 0, \"e,aggr|aggr+e.x\")")
+						),
+						lambdaAvailable()
+					);
+				}},
+			};
+
 			function buildContent(){
-				const {markup,apply,div,span,p}=$H;
+				const {markup,apply,div,span,p,a,h2,ol,ul,li}=$H;
 				const {moduleDoc,file,memberDescriptions,attention,test,Assertions,testedSample,argumentList,testResult,buildToc,displayValue,instanceObject} = DocTest;
 
 				$('#content').html(markup(
@@ -34,7 +68,7 @@
 									argumentList({
 										o:'целевой объект',
 										s:'структура, содержащая исходные значения атрибутов',
-										deep:'необязательный, если установлен в true, осуществляется глубокое копирование. По умолчанию - false'
+										deep:'необязательный, если установлен в '+code('true')+', осуществляется глубокое копирование. По умолчанию - '+code('false')
 									}),
 									test(()=>{
 										const _ = new Assertions();
@@ -81,6 +115,60 @@
 										});
 										return _.result();
 									})
+							],
+							each:[
+								p('Для каждого элемента первого уровня заданной структуры данных вызывает заданную функцию.'),
+								argumentList({
+									coll: 'исходная структура данных',
+									F:markup('функция, вызываемая со следующими параметрами:',
+										argumentList({
+											val: "значение элемента структуры",
+											key: "ключ данного элемента",
+											i: "номер итерации при обходе элементов (если структура является массивом, этот номер совпадает со значением ключа)"
+										}, false)
+									)
+								}),
+								lambdaAvailable(),
+								test(()=>{
+									const _ = new Assertions();
+
+									var c1 = null;
+									JsonQuarry.each(c1, null);
+									JsonQuarry.each(c1, function(){});
+									_.assertEqual(c1, null);
+									
+									var coll = [1, 2, 3];
+									var log = [];
+									JsonQuarry.each(coll, function(e, i){log.push(i+":"+e);});
+									_.assertEqual(log, ["0:1", "1:2", "2:3"]);
+
+
+									return _.result();
+								}),
+								test(()=>{
+									const _ = new Assertions();
+
+									var coll = {a:10, b:20, c:30};
+									var log = [];
+									JsonQuarry.each(coll, function(v, k, idx){log.push(idx+":"+k+"="+v);});
+									_.assertEqual(log, ["0:a=10", "1:b=20", "2:c=30"]);
+									return _.result();
+								})
+							],
+							aggregate:[
+								common.aggregate(),
+								test(()=>{
+									const _ = new Assertions();
+									_.assertEqual(JsonQuarry.aggregate(null, 0, function(e, aggr){return aggr+e;}), 0);
+									
+									var coll = [{x:1}, {x:2}, {x:3}];
+									var aggr = JsonQuarry.aggregate(coll, 0, function(e, aggr){return aggr + e.x;});
+									var aggr = JsonQuarry.aggregate(coll, 0, "e,aggr|aggr+e.x");
+									_.assertEqual(aggr, 6, "Error lambda");
+									
+
+									return _.result();
+								})
 							]
 						}),
 						instanceObject('Использование в "монадном" стиле', ()=>$D([]))(
@@ -134,7 +222,12 @@
 								]
 							})
 						)
-					])
+					]),
+					div(
+						a({name:"lambda"}),
+						h2("Использование лямбда-выражений"),
+						p("Для сокращенного указания функций в ряде случаев можно использовать лямбда-выражения, представляющие собой строку следующего формата: ", code("<список формальных параметров>|<возвращаемое значение>"), ". Например, выражение ", code("\"x,y|x+y\""), " означает функцию ", code("function(x, y){return x+y;}"), ".")
+					)
 				));
 				buildToc();
 
