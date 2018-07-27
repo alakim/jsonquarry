@@ -17,6 +17,7 @@
 	</style>
 	<script type="text/javascript">
 		$(function(){
+			JsonBrowser.onload();
 			//JsonBrowser.init(".browser", DB.prototype.jsondata);
 			$("#btLoadUrl").click(function(){
 				var url = $("#tbUrl").val();
@@ -49,12 +50,14 @@
 			$('#version').html(JsonQuarry.version());
 		});
 	</script>
+	<style id="theme"></style>
 
 </head>
 <body>
 	<h1>JSON Data Browser</h1>
+	<div id="selThemes"></div>
 	<p class="version">Powered by JsonQuarry v.<span id="version"></span></p>
-	<p><a href="doc.htm" target="_blank">JsonQuarry Reference</a></p>
+	<p><a href="manual1.html" target="_blank">JsonQuarry Reference</a></p>
 	<table>
 		<!--tr>
 			URL:
