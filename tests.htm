@@ -746,6 +746,203 @@ new JSUnit.Test("tree map", "Misc").run = function(){
 	]});
 }
 
+
+//********************** Path Tests **************************
+
+
+new JSUnit.Test("Подключение модуля JsonQuarry.Path", "Path Configuration").run = function(){
+	this.assert(typeof(JsonQuarry.Path), "object");
+}
+
+new JSUnit.Test("Путь в виде строки", "Path Attribute access").run = function(){with(JsonQuarry.Path){
+	var obj = {};
+	set(obj, "abc", 1);
+	this.assert(obj.abc, 1, "Error 1");
+	set(obj, "def/ghi", 11);
+	this.assert(obj.def.ghi, 11, "Error 2");
+	
+	set(obj, "x/#0", "xx");
+	set(obj, "x/#1", "abc");
+	this.assert(obj.x, ["xx","abc"], "Error 3");
+	
+	this.assert(obj, {abc:1, def:{ghi:11}, x:["xx", "abc"]}, "Error 4.1");
+	this.assert(obj.x.constructor, Array, "Error 4.2");
+	this.assert(obj.x.length, 2, "Error 4.3");
+	
+	this.assert(get(obj, "abc"), 1, "Error 5.1");
+	this.assert(get(obj, "def/ghi"), 11, "Error 5.2");
+	this.assert(get(obj, "x/#0"), "xx", "Error 5.3");
+	this.assert(get(obj, "x/#1"), "abc", "Error 5.4");
+}}
+
+new JSUnit.Test("Путь в виде массива", "Path Attribute access").run = function(){with(JsonQuarry.Path){
+	var obj = {};
+	set(obj, ["abc"], 1);
+	this.assert(obj.abc, 1, "Error 1");
+	set(obj, ["def", "ghi"], 11);
+	this.assert(obj.def.ghi, 11, "Error 2");
+	
+	set(obj, ["x", 0], "xx"); // åñëè øàã çàäàí â âèäå ÷èñëà, òî îí îáîçíà÷àåò èíäåêñ ýëåìåíòà ìàññèâà
+	set(obj, ["x", 1], "abc");
+	this.assert(obj.x, ["xx","abc"], "Error 3");
+}}
+
+new JSUnit.Test("Комбинированное представление пути", "Path Attribute access").run = function(){with(JsonQuarry.Path){
+	var obj = {};
+	set(obj, ["abc/def", "x", 0], 1);
+	set(obj, ["abc/def", "x", 1], 2);
+	this.assert({abc:{def:{x:[1,2]}}}, obj, "Error 1");
+	this.assert(get(obj, ["abc/def", "x", 1]), 2, "Error 2");
+	this.assert(get(obj, ["abc", ["def", "x"], 1]), 2, "Error 2");	
+}}
+
+new JSUnit.Test("Попытка обращения к несуществующим данным", "Path Attribute access").run = function(){with(JsonQuarry.Path){
+	var obj = {};
+	set(obj, ["abc/def", "x", 0], 1);
+	this.assert(get(obj, ["abc/def", "x", 5]), null, "Error 1");
+	this.assert(get(obj, ["abc/def", "xww", 5]), null, "Error 2");
+	this.assert(get(obj, ["abc/www", "xww", 5]), null, "Error 3");
+}}
+
+new JSUnit.Test("Delete Array element", "Path Element operations").run = function(){with(JsonQuarry.Path){
+	var obj = {
+		a:{
+			b:{
+				c:[1,2,3]
+			}
+		}
+	};
+	this.assert(get(obj, "a/b/c/#1"), 2, "Error 1");
+	delItem(obj, "a/b/c/#1");
+	this.assert(get(obj, "a/b/c/#1"), 3, "Error 2");
+	this.assert(obj, {a:{b:{c:[1,3]}}});
+}}
+
+new JSUnit.Test("Move Array element", "Path Element operations").run = function(){with(JsonQuarry.Path){
+	var obj = {
+		a:{
+			b:{
+				c:[1,2,3,4,5]
+			}
+		}
+	};
+	this.assert(obj, {a:{b:{c:[1,2,3,4,5]}}}, "Error 1");
+	moveDown(obj, "a/b/c/#1");
+	this.assert(obj, {a:{b:{c:[1,3,2,4,5]}}}, "Error 2");
+	moveUp(obj, "a/b/c/#1");
+	this.assert(obj, {a:{b:{c:[3,1,2,4,5]}}}, "Error 3");
+}}
+
+new JSUnit.Test("Delete Object attribute", "Path Element operations").run = function(){with(JsonQuarry.Path){
+	var obj = {
+		a:{
+			b:{
+				c:1,
+				d:2,
+				e:3
+			}
+		}
+	};
+	this.assert(get(obj, "a/b/d"), 2, "Error 1");
+	delItem(obj, "a/b/d");
+	this.assert(obj, {a:{b:{c:1, e:3}}});
+}}
+
+new JSUnit.Test("Add Array Element", "Path Element operations").run = function(){with(JsonQuarry.Path){
+	var arr = [];
+	set(arr, "1", 5); this.assert(arr, [null, 5]);
+	set(arr, "2", 6); this.assert(arr, [null, 5, 6]);
+	set(arr, "0", 2); this.assert(arr, [2, 5, 6]);
+	
+	arr = [];
+	set(arr, "3", 5); this.assert(arr, [null, null, null, 5]);
+	
+	var obj = {arr:[]};
+	set(obj, "arr/1", 5); this.assert(obj, {arr:[null, 5]});
+	set(obj, "arr/2", 6); this.assert(obj, {arr:[null, 5, 6]});
+	set(obj, "arr/5", 7); this.assert(obj, {arr:[null, 5, 6, null, null, 7]});
+	set(obj, "arr/0", 2); this.assert(obj, {arr:[2, 5, 6, null, null, 7]});
+	
+	
+}}
+new JSUnit.Test("Push Array Element", "Path Element operations").run = function(){with(JsonQuarry.Path){
+	var obj = {items:[]};
+	push(obj, "items", {id:1});
+	push(obj, "items", {id:2});
+	this.assert(obj, {items:[{id:1}, {id:2}]});
+	
+	obj = {};
+	push(obj, "items", {id:1});
+	push(obj, "items", {id:2});
+	this.assert(obj, {items:[{id:1}, {id:2}]});
+	
+}}
+new JSUnit.Test("Push Array Element Syntax", "Path Element operations").run = function(){with(JsonQuarry.Path){
+	var obj = {items:[]};
+	set(obj, "items/#*", {id:1}); // Çâåçäî÷êà îçíà÷àåò, ÷òî ýëåìåíò äîáàâëÿåòñÿ â êîíåö ìàññèâà
+	set(obj, "items/#*", {id:2});
+	this.assert(obj, {items:[{id:1}, {id:2}]});	
+}}
+
+new JSUnit.Test("Push into not existing array", "Path Element operations").run = function(){with(JsonQuarry.Path){
+	var obj = {};
+	push(obj, "items", {id:1});
+	this.assert(obj, {items:[{id:1}]}, "Push failed");
+}}
+	
+new JSUnit.Test("Push syntax for not existing array", "Path Element operations").run = function(){with(JsonQuarry.Path){
+	obj = {};
+	set(obj, "items/#*", {id:1}); // Çâåçäî÷êà îçíà÷àåò, ÷òî ýëåìåíò äîáàâëÿåòñÿ â êîíåö ìàññèâà
+	set(obj, "items/#*", {id:2});
+	this.assert(obj, {items:[{id:1}, {id:2}]}, "Push syntax failed");
+}}
+
+new JSUnit.Test("OnChange Event", "Path Events").run = function(){with(JsonQuarry.Path){
+	var obj = {x:{y:10, z:1}};
+	var hndIdx = JsonQuarry.Path.onchange.bind("x/y", function(){
+		JsonQuarry.Path.set(obj, "x/z", 2);
+	});
+	JsonQuarry.Path.set(obj, "x/y", 11);
+	this.assert(obj, {x:{y:11,z:2}});
+	
+	JsonQuarry.Path.set(obj, "x/z", 1);
+	JsonQuarry.Path.onchange.unbind(hndIdx);
+	JsonQuarry.Path.set(obj, "x/y", 12);
+	this.assert(obj, {x:{y:12,z:1}});
+}}
+
+new JSUnit.Test("OnMove Event", "Path Events").run = function(){with(JsonQuarry.Path){
+	var obj = {
+		x:[1,2,3,4]
+	};
+	var hndIdx = JsonQuarry.Path.onmove.bind("x/*", function(){
+		JsonQuarry.Path.set(obj, "y", 2);
+	});
+	JsonQuarry.Path.moveUp(obj, "x/1");
+	this.assert(obj, {x:[2,1,3,4], y:2});
+	
+	JsonQuarry.Path.set(obj, "y", 1);
+	JsonQuarry.Path.onmove.unbind(hndIdx);
+	JsonQuarry.Path.moveUp(obj, "x/1");
+	this.assert(obj, {x:[1,2,3,4], y:1});
+}}
+
+new JSUnit.Test("OnRemove Event", "Path Events").run = function(){with(JsonQuarry.Path){
+	var obj = {
+		x:[1,2,3,4]
+	};
+	var hndIdx = JsonQuarry.Path.onremove.bind("x/*", function(){
+		JsonQuarry.Path.set(obj, "y", 2);
+	});
+	JsonQuarry.Path.remove(obj, "x/1");
+	this.assert(obj, {x:[1,3,4], y:2});
+	
+	JsonQuarry.Path.set(obj, "y", 1);
+	JsonQuarry.Path.onremove.unbind(hndIdx);
+	JsonQuarry.Path.remove(obj, "x/1");
+	this.assert(obj, {x:[1,4], y:1});
+}}
+
 function init(){
 	document.getElementById("versionPanel").innerHTML = JsonQuarry.version();
 	JSUnit.init();
