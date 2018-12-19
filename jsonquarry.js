@@ -362,11 +362,7 @@ var JsonQuarry = (function(){
 		alert("JsonQuarry version "+num+" not supported");
 	}
 	
-	var JsPath = {
-		version:"4.2.541"
-	};
-
-	(function(){
+	const JsPath = (function(){
 		function each(coll, F){
 			if(typeof(coll.length)!="undefined")
 				for(var i=0; i<coll.length; i++) F(coll[i], i, coll[i+1]);
@@ -415,7 +411,7 @@ var JsonQuarry = (function(){
 			onremove:[]
 		};
 		
-		extend(JsPath, {
+		return {
 			set: function(obj, path, val){
 				if(path==null) throw "Path is null";
 				var o = obj;
@@ -467,11 +463,11 @@ var JsonQuarry = (function(){
 				return o;
 			},
 			
-			delItem: function(obj, path){with(JsPath){
+			delItem: function(obj, path){
 				var elPath = getSteps(path);
 				var collPath = elPath.splice(0, elPath.length-1);
 				elPath = elPath.join("");
-				var coll = get(obj, collPath);
+				var coll = JsPath.get(obj, collPath);
 				if(coll instanceof Array)
 					coll.splice(parseInt(elPath.match(/\d+/)),1);
 				else{
@@ -479,13 +475,13 @@ var JsonQuarry = (function(){
 					for(var k in coll){
 						if(k!=elPath) newC[k] = coll[k];
 					}
-					set(obj, collPath, newC);
+					JsPath.set(obj, collPath, newC);
 				}
 				each(handlers.onremove, function(hnd){
 					if(pathMatch(path, hnd.path))
 						hnd.handler(obj, path);
 				});
-			}},
+			},
 			
 			push: function(obj, path, val){
 				var arr = JsPath.get(obj, path);
@@ -498,11 +494,11 @@ var JsonQuarry = (function(){
 			
 			remove: function(obj, path){JsPath.delItem(obj, path);},
 			
-			move: function(obj, path, up){with(JsPath){
+			move: function(obj, path, up){
 				var elPath = getSteps(path);
 				var collPath = elPath.splice(0, elPath.length-1);
 				elPath = elPath.join("");
-				var coll = get(obj, collPath);
+				var coll = JsPath.get(obj, collPath);
 				if(coll instanceof Array){
 					var idx = parseInt(elPath.match(/\d+/));
 					if(idx==0 && up) throw "Can't move first element up.";
@@ -518,7 +514,7 @@ var JsonQuarry = (function(){
 				}
 				else
 					throw "Moving object attribute is meaningless";
-			}},
+			},
 			
 			moveUp: function(obj, path){JsPath.move(obj, path, true);},
 			moveDown: function(obj, path){JsPath.move(obj, path, false);},
@@ -546,7 +542,7 @@ var JsonQuarry = (function(){
 				reset: function(){handlers.onremove = [];},
 				unbind: function(idx){handlers.onremove.splice(idx, 1);}
 			}
-		});
+		};
 	})();
 	
 	var topVersion = "2.0.0";
