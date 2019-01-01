@@ -14,6 +14,11 @@
 			font-size:80%;
 			
 		}
+		h3{
+			padding:0;
+			margin:2px 0px;
+			font-size:16px;
+		}
 	</style>
 	<script type="text/javascript">
 		$(function(){
@@ -26,8 +31,9 @@
 					console.log(data);
 				});
 			});
-			$("#btLoadJSON").click(function(){
-				var json = $("#tbJson").val();
+
+			function loadJson(idx){
+				var json = $("#tbJson"+idx).val();
 				var strict = $("#cbStrict")[0].checked;
 				var freeze = $('#cbFreeze')[0].checked;
 				try{
@@ -42,10 +48,15 @@
 					}
 					
 				} catch(e){
-					alert("Ошибка парсинга JSON: " + e);
-					console.log("Ошибка парсинга JSON: ", e);
+					alert("Ошибка парсинга JSON #"+idx+": " + e);
+					console.log("Ошибка парсинга JSON #"+idx+": ", e);
 				}
-				JsonBrowser.init(".browser", json);
+				JsonBrowser.init(idx, ".browser"+idx, json);
+			}
+
+			$("#btLoadJSON").click(function(){
+				loadJson(1);
+				loadJson(2);
 			});
 			$('#version').html(JsonQuarry.version());
 		});
@@ -67,7 +78,16 @@
 		<tr>
 			<td><span class="name">JSON</span> data = </td> 
 			<td>
-				<textarea id="tbJson" style="width:500px; height:30px;"></textarea>
+				<h3>JSON #1</h3>
+				<textarea id="tbJson1" style="width:500px; height:30px;"></textarea>
+			</td>
+			<td>
+				<h3>JSON #2</h3>
+				<textarea id="tbJson2" style="width:500px; height:30px;"></textarea>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="3" align="center">
 				strict mode: <input type="checkbox" id="cbStrict" />
 				<input type="button" id="btLoadJSON" value="Load"/>
 				freeze: <input type="checkbox" id="cbFreeze" checked/>
@@ -78,29 +98,39 @@
 				<span class="name">JsonQuarry Query</span>
 				<div class="hint">e.g. JsonQuarry(data).map("x|x*2").raw()</div>
 			</td>
-			<td>
-				<textarea id="tbQuery" style="width:500px; height:30px;">JsonQuarry(data).raw()</textarea>
+			<td colspan="2">
+				<textarea id="tbQuery" style="width:1000px; height:30px;">JsonQuarry(data).raw()</textarea>
 				<input type="button" class="btExecQuery" disabled="true" value="Exec"/>
 			</td>
 		</tr>
 		<tr>
 			<td><span class="name">Result</span></td>
-			<td>
-				<textarea id="tbJsonRes" readonly="true" style="width:500px; height:30px;"></textarea>
-			</td>
+			<td><textarea id="tbJsonRes1" readonly="true" style="width:500px; height:30px;"></textarea></td>
+			<td><textarea id="tbJsonRes2" readonly="true" style="width:500px; height:30px;"></textarea></td>
 		</tr>
 		<tr>
 			<td width="250">
 				<span class="name">Transformation Rule</span>
 				<div class="hint">e.g. function(data){with(Clarino.simple){return div(apply(data, function(v){return p("v: ", v.v);}));}}</div>
 			</td>
-			<td>
-				<textarea id="tbTransformRule" style="width:500px; height:30px;"></textarea>
+			<td colspan="2">
+				<textarea id="tbTransformRule" style="width:1000px; height:30px;"></textarea>
 				<input type="button" class="btTransform" disabled="true" value="Apply"/>
 			</td>
 		</tr>
-		<tr><td colspan="2"><textarea id="tbTransformRes" style="width:100%; height:30px;"></textarea></td></tr>
+		<tr>
+			<td></td>
+			<td><textarea id="tbTransformRes1" style="width:500px; height:30px;"></textarea></td>
+			<td><textarea id="tbTransformRes2" style="width:500px; height:30px;"></textarea></td>
+		</tr>
+		<tr>
+			<td colspan="2">
+				<div class="browser1"></div>
+			</td>
+			<td>
+				<div class="browser2"></div>
+			</td>
+		</tr>
 	</table>
-	<div class="browser"></div>
 </body>
 </html>
