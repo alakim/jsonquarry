@@ -238,7 +238,7 @@ var JsonQuarry = (function(){
 			return coll.sort(F);
 		}
 		else if(typeof(F)=="string"){
-			// F = lambda(F);
+			F = lambda(F);
 			return coll.sort(function(a,b){
 				return a[F]>b[F]?1:a[F]<b[F]?-1:0;
 			});
@@ -545,7 +545,7 @@ var JsonQuarry = (function(){
 		};
 	})();
 	
-	var topVersion = "2.0.0";
+	var topVersion = "2.0.1";
 	
 	var intrf = {
 		version: version,
