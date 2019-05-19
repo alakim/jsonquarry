@@ -355,7 +355,7 @@ new JSUnit.Test("sort", "Simple Non-monadic").run = function(){
 		{salary:80, nm:"James"},
 		{salary:100, nm:"John"},
 		{salary:200, nm:"Phill"}
-	]);
+	], 'Error function');
 	this.assert(JsonQuarry.sort(coll, "a,b|a.salary>b.salary?1:a.salary<b.salary?-1:0"), [
 		{salary:80, nm:"James"},
 		{salary:100, nm:"John"},
@@ -365,7 +365,11 @@ new JSUnit.Test("sort", "Simple Non-monadic").run = function(){
 		{salary:80, nm:"James"},
 		{salary:100, nm:"John"},
 		{salary:200, nm:"Phill"}
-	]);
+	], 'Error attribute');
+
+	this.assert(JsonQuarry.sort([{p:2}, {p:1}, {p:3}], 'p', true), [
+		{p:3}, {p:2}, {p:1}
+	], 'Error reverse');
 }
 
 new JSUnit.Test("reverse", "Simple Non-monadic").run = function(){
@@ -686,6 +690,9 @@ new JSUnit.Test("sort", "Basic Monadic").run = function(){
 		{salary:100, nm:"John"},
 		{salary:200, nm:"Phill"}
 	]);
+	this.assert(JsonQuarry([{p:2},{p:5},{p:1}]).sort('p', true).raw(), [
+		{p:5}, {p:2}, {p:1}
+	], 'Error reverse');
 }
 
 new JSUnit.Test("reverse", "Basic Monadic").run = function(){

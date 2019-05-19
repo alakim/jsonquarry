@@ -153,7 +153,7 @@
 					), lambdaAvailable());
 				}},
 				sort: function(monadic){with($H){
-					return markup(" - сортирует элементы исходной коллекции "+(monadic?"":code("coll"))+" по условию, заданному функцией "+code("F")+". Вместо функции может быть передано имя поля элемента коллекции, из которого выбирается значение для сортировки.", lambdaAvailable());
+					return markup(" - сортирует элементы исходной коллекции "+(monadic?"":code("coll"))+" по условию, заданному функцией "+code("F")+". Вместо функции может быть передано имя поля элемента коллекции, из которого выбирается значение для сортировки. Если задан параметр "+code('reverse')+", производится сортировка в обратном порядке.", lambdaAvailable());
 				}},
 				reverse: function(monadic){with($H){
 					return markup(" - изменяет порядок элементов исходной коллекции ", (monadic?"":code("coll"))," на обратный");
@@ -197,7 +197,7 @@
 									groupBy:fParams("coll, F")+common.groupBy(),
 									concat:fParams("coll, c2")+" - добавляет элементы массива "+code("c2")+" к исходной коллекции "+code("coll"),
 									toArray:fParams("coll")+" - преобразует исходную коллекцию-объект в коллекцию-массив",
-									sort:fParams("coll, F")+common.sort(),
+									sort:fParams("coll, F, reverse")+common.sort(),
 									reverse:fParams("coll")+common.reverse(),
 									treeToArray:fParams("coll, childField, F")+common.treeToArray(),
 									Dictionary: fParams()+" - создает контейнерный объект типа \"словарь\", имеющий следующие методы:"+ol(
@@ -294,7 +294,7 @@
 									groupBy:fParams("F")+common.groupBy(true),
 									concat:fParams("c2")+" - добавляет элементы массива "+code("c2")+" к исходной коллекции.",
 									toArray:fParams()+" - преобразует исходную коллекцию-объект в коллекцию-массив",
-									sort:fParams("F")+common.sort(true),
+									sort:fParams("F, reverse")+common.sort(true),
 									reverse:fParams()+common.reverse(true),
 									treeToArray:fParams("childField, F")+common.treeToArray(true)
 								}[nm]

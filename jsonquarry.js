@@ -231,18 +231,25 @@ var JsonQuarry = (function(){
 		return res;
 	}
 	
-	function sort(coll, F){
+	function sort(coll, F, reverse){
 		if(!coll) return [];
-		if(!F){return coll.sort();}
+		var c = [].concat(coll);
+		//console.log(c);
+		if(!F){
+			c.sort();
+		}
 		else if(typeof(F)=="function"){
-			return coll.sort(F);
+			c.sort(F);
 		}
 		else if(typeof(F)=="string"){
 			F = lambda(F);
-			return coll.sort(function(a,b){
+			if(typeof(F)=='function') c.sort(F);
+			else c.sort(function(a,b){
 				return a[F]>b[F]?1:a[F]<b[F]?-1:0;
 			});
 		}
+		if(reverse) c.reverse();
+		return c;
 	}
 	
 	function reverse(coll){
@@ -290,7 +297,7 @@ var JsonQuarry = (function(){
 					return JSQ(toArray(coll, F));
 				},
 				treeToArray: function(childField, F){return JSQ(treeToArray(coll, childField, F));},
-				sort: function(F){return JSQ(sort(coll, F));},
+				sort: function(F, reverse){return JSQ(sort(coll, F, reverse));},
 				reverse: function(){
 					return JSQ(reverse(coll));
 				}
@@ -545,7 +552,7 @@ var JsonQuarry = (function(){
 		};
 	})();
 	
-	var topVersion = "2.0.1";
+	var topVersion = "2.1.0";
 	
 	var intrf = {
 		version: version,
